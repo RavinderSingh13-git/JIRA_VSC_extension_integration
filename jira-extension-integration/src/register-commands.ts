@@ -48,6 +48,25 @@ async function processUserSelection(selection: string | undefined, context: vsco
             }
         });
     }
+
+    if (selection === 'SNOW') {
+        vscode.window.showInformationMessage('Choose an action:', {
+            modal: true,
+            detail: 'What operation you want to perform on SNOW from VSCode?'
+        }, 'Fetch incident', 'Create incident', 'Fetch change ticket','Create change ticket').then(async (action) => {
+            if (action === 'Fetch incident') {
+                const ticketNumber = await vscode.window.showInputBox({
+                    prompt: 'Enter the ticket number',
+                    placeHolder: 'e.g. INC12345678'
+                });
+
+                if (ticketNumber) {
+                    fetchSnowTicket(ticketNumber);
+                }
+            }
+        });
+    }
+
 }
 
 function getWebviewContent(webview: vscode.Webview): string {
@@ -182,3 +201,48 @@ async function createJiraStory(summary: string, description: string) {
         vscode.window.showErrorMessage(errorMessage);
     }
 }
+
+
+// Fetching SNOW ticket function from here.....
+async function fetchSnowTicket(ticketNumber: string) {
+    const SnowBaseUrl = 'https://dev278506.service-now.com';
+    const SnowApiEndpoint = `/api/now/table/incident?sysparm_query=number=${ticketNumber}`;
+    const SnowUsername = 'admin';
+    const SnowApiToken = 'dG%zUm^10sGH';
+
+    try {
+        const response = await axios.get(`${SnowBaseUrl}${SnowApiEndpoint}`, {
+            auth: {
+                username: SnowUsername,
+                password: SnowApiToken
+            }
+        });
+
+        const ticketDetails = response.data;
+        vscode.window.showInformationMessage(`INC ticket details: ${JSON.stringify(ticketDetails)}`);
+    } catch (error) {
+        let errorMessage = 'Failed to fetch SNOW incident ticket';
+        if (axios.isAxiosError(error)) {
+            if (error.response) {
+                errorMessage += `: ${error.response.status} - ${error.response.statusText}`;
+                if (error.response.data && typeof error.response.data === 'string') {
+                    errorMessage += ` - ${error.response.data}`;
+                } else if (error.response.data && typeof error.response.data === 'object') {
+                    errorMessage += ` - ${JSON.stringify(error.response.data)}`;
+                }
+            } else if (error.request) {
+                errorMessage += ': No response received from server';
+            } else if (error.message) {
+                errorMessage += `: ${error.message}`;
+            }
+        } else if (error instanceof Error) {
+            errorMessage += `: ${error.message}`;
+        } else {
+            errorMessage += `: ${JSON.stringify(error)}`;
+        }
+        vscode.window.showErrorMessage(errorMessage);
+    }
+}
+
+
+
