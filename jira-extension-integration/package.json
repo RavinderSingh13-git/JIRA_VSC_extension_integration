@@ -9,9 +9,12 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onCommand:jira-extension-integration.helloWorld",
+    "onCommand:infinite-poc.dialog-modal-message"
+  ],
   "main": "./dist/extension.js",
-  "contributes": {     
+  "contributes": {
     "commands": [
       {
         "command": "jira-extension-integration.helloWorld",
@@ -48,5 +51,8 @@
     "webpack-cli": "^5.1.4",
     "@vscode/test-cli": "^0.0.9",
     "@vscode/test-electron": "^2.4.0"
+  },
+  "dependencies": {
+    "axios": "^0.24.0"
   }
 }
