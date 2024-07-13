@@ -43,15 +43,15 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.registerCommands = registerCommands;
 const vscode = __importStar(__webpack_require__(1));
 const axios_1 = __importDefault(__webpack_require__(3));
-function registerCommands(context, op) {
+function registerCommands(context) {
     context.subscriptions.push(vscode.commands.registerCommand('infinite-poc.dialog-modal-message', () => {
         vscode.window.showInformationMessage('Welcome to Singh\'s Extension/Plugin:', {
             modal: true,
             detail: 'Please select software which you want to deal with?'
-        }, 'JIRA', 'SNOW', 'Confluence', 'github').then(result => processUserSelection(result));
+        }, 'JIRA', 'SNOW', 'Confluence', 'github').then(result => processUserSelection(result, context));
     }));
 }
-async function processUserSelection(selection) {
+async function processUserSelection(selection, context) {
     if (!selection) {
         return;
     }
@@ -70,34 +70,58 @@ async function processUserSelection(selection) {
                 }
             }
             else if (action === 'Create Story') {
-                collectJiraStoryDetails();
+                // Open WebView to create JIRA story
+                const panel = vscode.window.createWebviewPanel('createJiraStory', 'Create JIRA Story', vscode.ViewColumn.One, {
+                    enableScripts: true
+                });
+                panel.webview.html = getWebviewContent(panel.webview);
+                panel.webview.onDidReceiveMessage(async (message) => {
+                    if (message.command === 'createJiraStory') {
+                        await createJiraStory(message.summary, message.description);
+                    }
+                });
             }
         });
     }
 }
-async function collectJiraStoryDetails() {
-    const summary = await vscode.window.showInputBox({
-        prompt: 'Enter the summary for the new JIRA story'
-    });
-    if (!summary) {
-        vscode.window.showErrorMessage('Summary is required to create a JIRA story.');
-        return;
-    }
-    const description = await vscode.window.showInputBox({
-        prompt: 'Enter the description for the new JIRA story'
-    });
-    if (!description) {
-        vscode.window.showErrorMessage('Description is required to create a JIRA story.');
-        return;
-    }
-    const confirm = await vscode.window.showInformationMessage(`Summary: ${summary}\nDescription: ${description}\n\nDo you want to create this story?`, { modal: true }, 'Yes', 'No');
-    if (confirm === 'Yes') {
-        createJiraStory({ summary, description });
-    }
+function getWebviewContent(webview) {
+    return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Create JIRA Story</title>
+        </head>
+        <body>
+            <h1>Create JIRA Story</h1>
+            <form id="jiraForm">
+                <label for="summary">Summary:</label><br>
+                <input type="text" id="summary" name="summary"><br>
+                <label for="description">Description:</label><br>
+                <textarea id="description" name="description"></textarea><br>
+                <button type="button" onclick="createJiraStory()">Create Story</button>
+            </form>
+            <script>
+                const vscode = acquireVsCodeApi();
+
+                function createJiraStory() {
+                    const summary = document.getElementById('summary').value;
+                    const description = document.getElementById('description').value;
+                    vscode.postMessage({
+                        command: 'createJiraStory',
+                        summary: summary,
+                        description: description
+                    });
+                }
+            </script>
+        </body>
+        </html>
+    `;
 }
 async function fetchJiraStory(storyNumber) {
     const jiraBaseUrl = 'https://princeravinderias3.atlassian.net';
-    const jiraApiEndpoint = `/rest/api/2/status/${storyNumber}`;
+    const jiraApiEndpoint = `/rest/api/2/issue/${storyNumber}`;
     const jiraUsername = 'princeravinderias3@gmail.com';
     const jiraApiToken = 'ATATT3xFfGF0gvh7SKxc1Y5oDV7tHbU8HFhtTI7_Ni0aTsAi4SSC_o23D-V-Fi9IoJbMZVe-1GRx-TwyVXx3NJ96d2qj_m3E9ZKLqqdBq6MSa3WS5FoQIpAMNtupaJXAVRQgjR_2XXHmDtdcKRxxcjUcPjR2J4n0-SRHGP5TogC8y2pnh8t1nMg=B9A5CB87';
     try {
@@ -114,7 +138,7 @@ async function fetchJiraStory(storyNumber) {
         vscode.window.showErrorMessage(`Failed to fetch JIRA story: ${error.message}`);
     }
 }
-async function createJiraStory(storyDetails) {
+async function createJiraStory(summary, description) {
     const jiraBaseUrl = 'https://princeravinderias3.atlassian.net';
     const jiraApiEndpoint = '/rest/api/2/issue';
     const jiraUsername = 'princeravinderias3@gmail.com';
@@ -124,8 +148,8 @@ async function createJiraStory(storyDetails) {
             "project": {
                 "id": "10000"
             },
-            "summary": "This is Singh's JIRA story number-20.",
-            "description": "Creating of an issue using project keys and issue type names using the REST API",
+            "summary": summary,
+            "description": description,
             "issuetype": {
                 "id": "10001"
             }
