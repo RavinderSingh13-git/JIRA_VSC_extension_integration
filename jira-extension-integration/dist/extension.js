@@ -70,7 +70,6 @@ async function processUserSelection(selection, context) {
                 }
             }
             else if (action === 'Create Story') {
-                // Open WebView to create JIRA story
                 const panel = vscode.window.createWebviewPanel('createJiraStory', 'Create JIRA Story', vscode.ViewColumn.One, {
                     enableScripts: true
                 });
@@ -135,7 +134,32 @@ async function fetchJiraStory(storyNumber) {
         vscode.window.showInformationMessage(`Story details: ${JSON.stringify(storyDetails)}`);
     }
     catch (error) {
-        vscode.window.showErrorMessage(`Failed to fetch JIRA story: ${error.message}`);
+        let errorMessage = 'Failed to fetch JIRA story';
+        if (axios_1.default.isAxiosError(error)) {
+            if (error.response) {
+                errorMessage += `: ${error.response.status} - ${error.response.statusText}`;
+                if (error.response.data && typeof error.response.data === 'string') {
+                    errorMessage += ` - ${error.response.data}`;
+                }
+                else if (error.response.data && typeof error.response.data === 'object') {
+                    errorMessage += ` - ${JSON.stringify(error.response.data)}`;
+                }
+            }
+            else if (error.request) {
+                errorMessage += ': No response received from server';
+            }
+            else if (error.message) {
+                errorMessage += `: ${error.message}`;
+            }
+        }
+        else if (error instanceof Error) {
+            // General error handling for other types of errors
+            errorMessage += `: ${error.message}`;
+        }
+        else {
+            errorMessage += `: ${JSON.stringify(error)}`;
+        }
+        vscode.window.showErrorMessage(errorMessage);
     }
 }
 async function createJiraStory(summary, description) {
@@ -169,7 +193,31 @@ async function createJiraStory(summary, description) {
         vscode.window.showInformationMessage(`Created new story: ${JSON.stringify(createdStory)}`);
     }
     catch (error) {
-        vscode.window.showErrorMessage(`Failed to create JIRA story: ${error.message}`);
+        let errorMessage = 'Failed to fetch JIRA story';
+        if (axios_1.default.isAxiosError(error)) {
+            if (error.response) {
+                errorMessage += `: ${error.response.status} - ${error.response.statusText}`;
+                if (error.response.data && typeof error.response.data === 'string') {
+                    errorMessage += ` - ${error.response.data}`;
+                }
+                else if (error.response.data && typeof error.response.data === 'object') {
+                    errorMessage += ` - ${JSON.stringify(error.response.data)}`;
+                }
+            }
+            else if (error.request) {
+                errorMessage += ': No response received from server';
+            }
+            else if (error.message) {
+                errorMessage += `: ${error.message}`;
+            }
+        }
+        else if (error instanceof Error) {
+            errorMessage += `: ${error.message}`;
+        }
+        else {
+            errorMessage += `: ${JSON.stringify(error)}`;
+        }
+        vscode.window.showErrorMessage(errorMessage);
     }
 }
 
@@ -6378,7 +6426,7 @@ function activate(context) {
     // Now provide the implementation of the command with registerCommand
     // The commandId parameter must match the command field in package.json
     const op = vscode_1.window.createOutputChannel('jira-extension-integration');
-    (0, register_commands_1.registerCommands)(context, op);
+    (0, register_commands_1.registerCommands)(context);
     vscode_1.commands.executeCommand('setContext', 'isPrintContextMenu', true);
     // CustomEvent.customEvent.subscribe(data => window.showInformationMessage('Message from event: ' + data));
     // const disposable = vscode.commands.registerCommand('jira-extension-integration.helloWorld', () => {

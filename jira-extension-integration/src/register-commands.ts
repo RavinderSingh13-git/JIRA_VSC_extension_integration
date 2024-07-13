@@ -30,7 +30,6 @@ async function processUserSelection(selection: string | undefined, context: vsco
                     fetchJiraStory(storyNumber);
                 }
             } else if (action === 'Create Story') {
-                // Open WebView to create JIRA story
                 const panel = vscode.window.createWebviewPanel(
                     'createJiraStory',
                     'Create JIRA Story',
@@ -104,7 +103,27 @@ async function fetchJiraStory(storyNumber: string) {
         const storyDetails = response.data;
         vscode.window.showInformationMessage(`Story details: ${JSON.stringify(storyDetails)}`);
     } catch (error) {
-        vscode.window.showErrorMessage(`Failed to fetch JIRA story: ${error.message}`);
+        let errorMessage = 'Failed to fetch JIRA story';
+        if (axios.isAxiosError(error)) {
+            if (error.response) {
+                errorMessage += `: ${error.response.status} - ${error.response.statusText}`;
+                if (error.response.data && typeof error.response.data === 'string') {
+                    errorMessage += ` - ${error.response.data}`;
+                } else if (error.response.data && typeof error.response.data === 'object') {
+                    errorMessage += ` - ${JSON.stringify(error.response.data)}`;
+                }
+            } else if (error.request) {
+                errorMessage += ': No response received from server';
+            } else if (error.message) {
+                errorMessage += `: ${error.message}`;
+            }
+        } else if (error instanceof Error) {
+            // General error handling for other types of errors
+            errorMessage += `: ${error.message}`;
+        } else {
+            errorMessage += `: ${JSON.stringify(error)}`;
+        }
+        vscode.window.showErrorMessage(errorMessage);
     }
 }
 
@@ -141,6 +160,25 @@ async function createJiraStory(summary: string, description: string) {
         const createdStory = response.data;
         vscode.window.showInformationMessage(`Created new story: ${JSON.stringify(createdStory)}`);
     } catch (error) {
-        vscode.window.showErrorMessage(`Failed to create JIRA story: ${error.message}`);
+        let errorMessage = 'Failed to fetch JIRA story';
+        if (axios.isAxiosError(error)) {
+            if (error.response) {
+                errorMessage += `: ${error.response.status} - ${error.response.statusText}`;
+                if (error.response.data && typeof error.response.data === 'string') {
+                    errorMessage += ` - ${error.response.data}`;
+                } else if (error.response.data && typeof error.response.data === 'object') {
+                    errorMessage += ` - ${JSON.stringify(error.response.data)}`;
+                }
+            } else if (error.request) {
+                errorMessage += ': No response received from server';
+            } else if (error.message) {
+                errorMessage += `: ${error.message}`;
+            }
+        } else if (error instanceof Error) {
+            errorMessage += `: ${error.message}`;
+        } else {
+            errorMessage += `: ${JSON.stringify(error)}`;
+        }
+        vscode.window.showErrorMessage(errorMessage);
     }
 }

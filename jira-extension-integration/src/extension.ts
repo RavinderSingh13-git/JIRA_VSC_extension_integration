@@ -16,7 +16,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
 	const op = window.createOutputChannel('jira-extension-integration');
-	registerCommands(context, op);
+	registerCommands(context);
 	commands.executeCommand('setContext', 'isPrintContextMenu', true);
 
 	// CustomEvent.customEvent.subscribe(data => window.showInformationMessage('Message from event: ' + data));
